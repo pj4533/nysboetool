@@ -1,0 +1,8 @@
+.DS_Store
+*.csv
+*.sql
+.build
+Packages
+*.xcodeproj
+Build
+Index
