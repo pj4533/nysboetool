@@ -21,13 +21,39 @@ func cleanHistoryItem(_ item: String) -> String {
     cleanItem = cleanItem.replacingOccurrences(of: ",", with: "")
     cleanItem = cleanItem.replacingOccurrences(of: "  ", with: " ")
     
+    // is this right?
+    cleanItem = cleanItem.replacingOccurrences(of: "VILLAGE", with: "GENERAL")
+
+    cleanItem = cleanItem.replacingOccurrences(of: "PRES ELECTION", with: "GENERAL")
+    cleanItem = cleanItem.replacingOccurrences(of: " SENECA FALLS", with: "")
+    cleanItem = cleanItem.replacingOccurrences(of: "/SPECIAL ELECTION", with: "")
     cleanItem = cleanItem.replacingOccurrences(of: "SPECIAL ELECTION", with: "SE")
     cleanItem = cleanItem.replacingOccurrences(of: "SP", with: "SE")
     cleanItem = cleanItem.replacingOccurrences(of: "100TH & 103RD AD", with: "")
     cleanItem = cleanItem.replacingOccurrences(of: "20TH CD", with: "")
 
+    cleanItem = cleanItem.replacingOccurrences(of: "FALL ", with: "")
+    cleanItem = cleanItem.replacingOccurrences(of: " - PRESIDENTIAL", with: "")
+    cleanItem = cleanItem.replacingOccurrences(of: " - GUBERNATORIAL", with: "")
+
+    cleanItem = cleanItem.replacingOccurrences(of: ":NOVEMBER 4TH 2003", with: " 2003")
+    cleanItem = cleanItem.replacingOccurrences(of: ":NOVEMBER 52002", with: " 2002")
+    cleanItem = cleanItem.replacingOccurrences(of: "NOVEMBER 7TH 2006:", with: "2006")
+    cleanItem = cleanItem.replacingOccurrences(of: "NOVEMBER 2ND2004:", with: "2004 ")
+    cleanItem = cleanItem.replacingOccurrences(of: "11/04/", with: "")
+    cleanItem = cleanItem.replacingOccurrences(of: "11/8/", with: "")
+
+    cleanItem = cleanItem.replacingOccurrences(of: ":NOVEMBER 6TH 2012", with: "")
+    cleanItem = cleanItem.replacingOccurrences(of: " NOVEMBER 5 2013", with: "")
+    cleanItem = cleanItem.replacingOccurrences(of: ":NOVEMBER 8TH", with: "")
+    cleanItem = cleanItem.replacingOccurrences(of: "GENERAL ELECTIONS", with: "GE")
+
     cleanItem = cleanItem.replacingOccurrences(of: "GENERAL ELECTION", with: "GE")
+    cleanItem = cleanItem.replacingOccurrences(of: "STATE AND LOCAL ONLY GENERAL", with: "GE")
+    cleanItem = cleanItem.replacingOccurrences(of: "STATE AND LOCAL GENERAL", with: "GE")
     cleanItem = cleanItem.replacingOccurrences(of: "GENERAL STATE AND LOCAL", with: "GE")
+    cleanItem = cleanItem.replacingOccurrences(of: "GENERAL STATE & LOCAL ELECTION", with: "GE")
+    cleanItem = cleanItem.replacingOccurrences(of: "GENERAL S & L", with: "GE")
     cleanItem = cleanItem.replacingOccurrences(of: "GENERAL", with: "GE")
     cleanItem = cleanItem.replacingOccurrences(of: "PRIMARY ELECTION", with: "PE")
     cleanItem = cleanItem.replacingOccurrences(of: "FEDERAL PRIMARY", with: "PE")
@@ -38,6 +64,8 @@ func cleanHistoryItem(_ item: String) -> String {
     cleanItem = cleanItem.replacingOccurrences(of: "PR", with: "PE")
     cleanItem = cleanItem.replacingOccurrences(of: "FEDERAL", with: "")
     cleanItem = cleanItem.replacingOccurrences(of: "CITY", with: "")
+
+    cleanItem = cleanItem.replacingOccurrences(of: " NOVEMBER ", with: " ")
 
     cleanItem = cleanItem.replacingOccurrences(of: "0205", with: "")
     cleanItem = cleanItem.replacingOccurrences(of: "0316", with: "")
@@ -113,6 +141,12 @@ func cleanFile(_ path: String, _ debugOutput: Bool?) {
     let csv = try! CSVReader(stream: stream)
    var uniqueHistoryItems : [String] = []
     csv.next() // skip first row
+    var count = 0
+    let batchSize = 500
+    if debugOutput != true {
+        print ("START TRANSACTION;")
+    }
+
     while let row = csv.next() {
         var cleanedVoterHistory : [String] = []
         let voterHistory = row[1].trimmingCharacters(in: .whitespacesAndNewlines)
@@ -130,14 +164,23 @@ func cleanFile(_ path: String, _ debugOutput: Bool?) {
                 cleanedVoterHistory.append(cleanedItem)
             }
         }
-        
+        count = count + 1
+        if count >= batchSize {
+            if debugOutput != true {
+                print("COMMIT;")
+                print ("START TRANSACTION;")
+            }
+            count = 0
+        }
         if debugOutput != true {
-            print ("UPDATE `state_boe_012219` SET `state_boe_012219`.`CLEANED_VOTER_HISTORY` = '\(cleanedVoterHistory.joined())' WHERE `state_boe_012219`.`SBOEID` = '\(row[0])';")            
+            print ("UPDATE `state_boe_active_012219` SET `state_boe_active_012219`.`CLEANED_VOTER_HISTORY` = '\(cleanedVoterHistory.joined())' WHERE `state_boe_active_012219`.`COUNTYVRNUMBER` = '\(row[0])';")            
         }
     }
     
     if debugOutput == true {
        print("\n\n\(uniqueHistoryItems.count) unique history items")
+    } else {
+        print("COMMIT;")
     }
 }
 
